@@ -4,17 +4,20 @@ from twisted.web.server import Site
 
 from calendar import calendar
 
+
 class YearPage(Resource):
     def __init__(self, year):
         Resource.__init__(self)
         self.year = year
 
     def render_GET(self, request):
-        return "<html><body><pre>%s</pre></body></html>" % (calendar(self.year),)
+        # fix bytes
+        return ("<html><body><pre>%s</pre></body></html>" % (calendar(self.year),)).encode()
+
 
 class CalendarHome(Resource):
     def getChild(self, name, request):
-        if name == '':
+        if name == b'':  # fix bytes
             return self
         if name.isdigit():
             return YearPage(int(name))
@@ -22,7 +25,8 @@ class CalendarHome(Resource):
             return NoResource()
 
     def render_GET(self, request):
-        return "<html><body>Welcome to the calendar server!</body></html>"
+        return "<html><body>Welcome to the calendar server!</body></html>".encode()  # fix bytes
+
 
 root = CalendarHome()
 factory = Site(root)
