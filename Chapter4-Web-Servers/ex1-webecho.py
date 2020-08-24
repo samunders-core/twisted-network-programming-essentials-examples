@@ -6,14 +6,14 @@ class HTTPEchoProtocol(basic.LineReceiver):
         self.lines = []
 
     def lineReceived(self, line):
-        self.lines.append(line)
+        self.lines.append(line.decode()) # decode from bytes to utf-8 string
         if not line:
             self.sendResponse()
 
     def sendResponse(self):
-        self.sendLine("HTTP/1.1 200 OK")
-        self.sendLine("")
-        responseBody = "You said:\r\n\r\n" + "\r\n".join(self.lines)
+        self.sendLine(b'HTTP/1.1 200 OK')
+        self.sendLine(b'')
+        responseBody = ("You said:\r\n\r\n" + "\r\n".join(self.lines)).encode()
         self.transport.write(responseBody)
         self.transport.loseConnection()
 
