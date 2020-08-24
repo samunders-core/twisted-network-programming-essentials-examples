@@ -6,6 +6,8 @@ from calendar import calendar
 
 
 class YearPage(Resource):
+    isLeaf = True  # render any URL with  yeaar/something ex: 2015/something
+
     def __init__(self, year):
         Resource.__init__(self)
         self.year = year
