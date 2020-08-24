@@ -2,10 +2,13 @@ from twisted.internet import reactor
 from twisted.web.resource import Resource
 from twisted.web.server import Site
 
-import cgi
+# import cgi
+# import html
+
 
 class FormPage(Resource):
     isLeaf = True
+
     def render_GET(self, request):
         return """
 <html>
@@ -16,14 +19,18 @@ class FormPage(Resource):
    </form>
    </body>
    </html>
-"""
+""".encode()
 
     def render_POST(self, request):
-        return """
+        # temp = html.escape(request.args[b'form-field'][0]).encode()
+        temp = request.args[b'form-field'][0].decode()
+        print(temp)
+        return ("""
 <html>
- <body>You submitted: %s</body>
+ <body>You submitted: {}</body>
  </html>
-""" % (cgi.escape(request.args["form-field"][0]),)
+""".format(temp)).encode()
+
 
 factory = Site(FormPage())
 reactor.listenTCP(8000, factory)
