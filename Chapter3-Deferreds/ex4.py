@@ -1,5 +1,6 @@
 from twisted.internet import reactor, defer
 
+
 class HeadlineRetriever(object):
     def processHeadline(self, headline):
         if len(headline) > 50:
@@ -17,16 +18,20 @@ class HeadlineRetriever(object):
         self.d.addCallback(self._toHTML)
         return self.d
 
+
 def printData(result):
-    print result
+    print(result)
     reactor.stop()
+
 
 def printError(failure):
-    print failure
+    print(failure)
     reactor.stop()
 
+
 h = HeadlineRetriever()
-d = h.getHeadline("Breaking News: Twisted Takes us to the Moon!")
+d = h.getHeadline(
+    "Breaking News: Twisted Takes us to the Moon! 1234567890 1234567890")
 d.addCallbacks(printData, printError)
 
 reactor.run()

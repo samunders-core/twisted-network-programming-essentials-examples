@@ -10,7 +10,7 @@
 from twisted.internet.defer import Deferred
 
 def myErrback(failure):
-    print failure
+    print (failure)
 
 d = Deferred()
 d.addErrback(myErrback)
