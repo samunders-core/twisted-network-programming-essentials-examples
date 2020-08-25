@@ -7,7 +7,7 @@ from twisted.cred.checkers import FilePasswordDB
 from twisted.cred.portal import IRealm, Portal
 from zope.interface import implementer
 
-# cache()
+cache()
 
 
 @implementer(IRealm)
@@ -23,7 +23,6 @@ class PublicHTMLRealm(object):
 portal = Portal(PublicHTMLRealm(), [FilePasswordDB('httpd.password')])
 
 credentialFactory = DigestCredentialFactory("md5", "localhost:8080")
-
 resource = HTTPAuthSessionWrapper(portal, [credentialFactory])
 ############################
 
