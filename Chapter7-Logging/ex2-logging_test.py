@@ -8,7 +8,7 @@ log.msg("Logging an exception")
 
 try:
     1 / 0
-except ZeroDivisionError, e:
+except ZeroDivisionError as e:
     log.err(e)
 
 log.msg("Ending experiment")
