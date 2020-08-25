@@ -18,7 +18,7 @@ def getName(email):
 
 def printResults(results):
     for elt in results:
-        print elt[0]
+        print (elt[0])
 
 def finish():
     dbpool.close()
