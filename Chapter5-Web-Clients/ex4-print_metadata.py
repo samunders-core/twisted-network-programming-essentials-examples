@@ -7,8 +7,8 @@ from twisted.web.http_headers import Headers
 
 def printHeaders(response):
 
-    print('HTTP version:', *[x.decode() if type(x)
-                             is bytes else x for x in response.version])
+    print('HTTP version:', *(x.decode() if type(x)
+                             is bytes else x for x in response.version))
     print('Status code:', response.code)
     print('Status phrase:', response.phrase.decode())
     print('Response headers:')

@@ -6,9 +6,12 @@ from twisted.web.client import Agent
 from twisted.web.iweb import IBodyProducer
 
 from zope.interface import implements
+from zope.interface import implementer
 
+
+@implementer
 class StringProducer(object):
-    implements(IBodyProducer)
+    # implements(IBodyProducer)
 
     def __init__(self, body):
         self.body = body
@@ -24,34 +27,39 @@ class StringProducer(object):
     def stopProducing(self):
         pass
 
+
 class ResourcePrinter(Protocol):
     def __init__(self, finished):
         self.finished = finished
 
     def dataReceived(self, data):
-        print data
+        print(data)
 
     def connectionLost(self, reason):
         self.finished.callback(None)
+
 
 def printResource(response):
     finished = Deferred()
     response.deliverBody(ResourcePrinter(finished))
     return finished
 
+
 def printError(failure):
-    print >>sys.stderr, failure
+    print(failure, file=sys.stderr)
+
 
 def stop(result):
     reactor.stop()
 
+
 if len(sys.argv) != 3:
-    print >>sys.stderr, "Usage: python post_resource.py URL 'POST DATA'"
+    print("Usage: python post_resource.py URL 'POST DATA'", file=sys.stderr)
     exit(1)
 
 agent = Agent(reactor)
 body = StringProducer(sys.argv[2])
-d = agent.request('POST', sys.argv[1], bodyProducer=body)
+d = agent.request(b'POST', sys.argv[1].encode(), bodyProducer=body)
 d.addCallbacks(printResource, printError)
 d.addBoth(stop)
 
