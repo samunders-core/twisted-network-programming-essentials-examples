@@ -15,15 +15,21 @@ from zope.interface import implementer
 class PublicHTMLRealm(object):
     def requestAvatar(self, avatarId, mind, *interfaces):
         if IResource in interfaces:
-            return (IResource, File("/var/www/%s/public_html" % (avatarId,)), lambda: None)
+            print("/var/www/{}/public_html".format(avatarId.decode()))
+            return (IResource, File("/var/www/{}/public_html".format(avatarId.decode())), lambda: None)
+        print('Unauthorized')
         raise NotImplementedError()
 
-# todo: check how to use password file!!!
-portal = Portal(PublicHTMLRealm(), [FilePasswordDB('httpd.password')])
+
+portal = Portal(PublicHTMLRealm(), [FilePasswordDB('./httpd.password')])
+
+# print([FilePasswordDB('./httpd.password')])
 
 credentialFactory = BasicCredentialFactory("localhost:8080")
+# print(credentialFactory.__repr__())
 
 resource = HTTPAuthSessionWrapper(portal, [credentialFactory])
+# print(resource.__repr__())
 
 # remove below if use rpy script for twistd
 factory = Site(resource)
