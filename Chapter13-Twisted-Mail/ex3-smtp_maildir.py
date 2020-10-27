@@ -1,15 +1,16 @@
+import mailbox
 import os
 import sys
 
-from email.Header import Header
-from zope.interface import implements
+from email.header import Header
+from zope.interface import implementer
 
 from twisted.internet import reactor
-from twisted.mail import smtp, maildir
+from twisted.mail import smtp
 from twisted.python import log
 
+@implementer(smtp.IMessageDelivery)
 class LocalMessageDelivery(object):
-    implements(smtp.IMessageDelivery)
 
     def __init__(self, protocol, baseDir):
         self.protocol = protocol
@@ -38,27 +39,27 @@ class LocalMessageDelivery(object):
             log.msg("Received email for invalid recipient %s" % user)
             raise smtp.SMTPBadRcpt(user)
 
+@implementer(smtp.IMessage)
 class MaildirMessage(object):
-    implements(smtp.IMessage)
 
     def __init__(self, userDir):
         if not os.path.exists(userDir):
             os.mkdir(userDir)
         inboxDir = os.path.join(userDir, 'Inbox')
-        self.mailbox = maildir.MaildirMailbox(inboxDir)
+        self.mailbox = mailbox.MaildirMailbox(inboxDir)
         self.lines = []
 
     def lineReceived(self, line):
         self.lines.append(line)
 
     def eomReceived(self):
-        print "New message received."
+        print("New message received.")
         self.lines.append('') # Add a trailing newline.
         messageData = '\n'.join(self.lines)
         return self.mailbox.appendMessage(messageData)
 
     def connectionLost(self):
-        print "Connection lost unexpectedly!"
+        print("Connection lost unexpectedly!")
         # Unexpected loss of connection; don't save.
         del(self.lines)
 
