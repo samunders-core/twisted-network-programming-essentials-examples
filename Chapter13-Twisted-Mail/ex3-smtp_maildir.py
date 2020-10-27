@@ -5,7 +5,7 @@ import sys
 from email.header import Header
 from zope.interface import implementer
 
-from twisted.internet import reactor
+from twisted.internet import defer, reactor
 from twisted.mail import smtp
 from twisted.python import log
 
@@ -21,7 +21,7 @@ class LocalMessageDelivery(object):
         myHostname = self.protocol.transport.getHost().host
         headerValue = "from %s by %s with ESMTP ; %s" % (
             clientHostname, myHostname, smtp.rfc822date())
-        return "Received: %s" % Header(headerValue)
+        return ("Received: %s" % Header(headerValue)).encode("utf-8")
 
     def validateFrom(self, helo, origin):
         # Accept any sender.
@@ -32,7 +32,7 @@ class LocalMessageDelivery(object):
 
     def validateTo(self, user):
         # Accept recipients @localhost.
-        if user.dest.domain == "localhost":
+        if user.dest.domain.decode("utf-8") == "localhost":
             return lambda: MaildirMessage(
                 self._getAddressDir(str(user.dest)))
         else:
@@ -44,19 +44,21 @@ class MaildirMessage(object):
 
     def __init__(self, userDir):
         if not os.path.exists(userDir):
-            os.mkdir(userDir)
+            os.makedirs(userDir, exist_ok=True)
         inboxDir = os.path.join(userDir, 'Inbox')
-        self.mailbox = mailbox.MaildirMailbox(inboxDir)
+        self.mailbox = mailbox.Maildir(inboxDir)
         self.lines = []
 
-    def lineReceived(self, line):
-        self.lines.append(line)
+    def lineReceived(self, lineBytes):
+        # first call with result of receivedHeader(...) above
+        self.lines.append(lineBytes.decode("utf-8"))
 
     def eomReceived(self):
         print("New message received.")
         self.lines.append('') # Add a trailing newline.
         messageData = '\n'.join(self.lines)
-        return self.mailbox.appendMessage(messageData)
+        self.mailbox.add(messageData)
+        return defer.succeed(None)
 
     def connectionLost(self):
         print("Connection lost unexpectedly!")
