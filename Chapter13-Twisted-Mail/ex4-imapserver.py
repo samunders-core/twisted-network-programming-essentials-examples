@@ -18,6 +18,8 @@ class IMAPUserAccount(object):
         self.dir = userDir
 
     def _getMailbox(self, path):
+        if path.lower() == "inbox":
+            path = "Inbox"  # to match ex3-smtp_maildir.py
         fullPath = os.path.join(self.dir, path)
         if not os.path.exists(fullPath):
             raise KeyError("No such mailbox")
