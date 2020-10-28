@@ -8,7 +8,7 @@ from zope.interface import implementer
 
 from twisted.cred import checkers, portal
 from twisted.internet import protocol, reactor
-from twisted.mail import imap4
+from twisted.mail import imap4, interfaces
 from twisted.python import log
 
 @implementer(imap4.IAccount)
@@ -33,6 +33,7 @@ class IMAPUserAccount(object):
         return self._getMailbox(path)
 
 @implementer(imap4.IMailbox)
+@implementer(interfaces.ICloseableMailboxIMAP)
 class IMAPMailbox(object):
 
     def __init__(self, path):
@@ -53,7 +54,22 @@ class IMAPMailbox(object):
         return 0
 
     def isWriteable(self):
-        return False
+        return True
+
+    def expunge(self, messageSet=imap4.MessageSet()):
+        files = set()
+        self.maildir.lock()
+        if not messageSet.last:
+            for k in self.maildir.keys():
+                messageSet.add(k)
+                files.add(self.maildir.get_file(k)._file)
+            self.maildir.clear()
+        try:
+            return [messageNum for messageNum in messageSet if not self.maildir.discard(messageNum)]
+        finally:
+            self.maildir.unlock()
+            for f in files:
+                os.unlink(f.name)
 
     def getUIDValidity(self):
         return self.uniqueValidityIdentifier
@@ -76,6 +92,9 @@ class IMAPMailbox(object):
         for seq, msg in messagesToFetch.items():
             yield seq, MaildirMessage(msg)
 
+    def close():
+        self.maildir.close()
+
     def addListener(self, listener):
         self.listeners.append(listener)
 
@@ -87,6 +106,9 @@ class MaildirMessage(object):
 
     def __init__(self, messageData):
         self.message = messageData
+
+    def getFlags(self):
+        return self.message.get_flags()
 
     def getHeaders(self, negate, *names):
         if not names:
