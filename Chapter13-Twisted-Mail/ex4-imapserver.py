@@ -1,17 +1,18 @@
 import email
+import mailbox
 import os
 import random
-from StringIO import StringIO
+from io import BytesIO
 import sys
-from zope.interface import implements
+from zope.interface import implementer
 
 from twisted.cred import checkers, portal
 from twisted.internet import protocol, reactor
-from twisted.mail import imap4, maildir
+from twisted.mail import imap4
 from twisted.python import log
 
+@implementer(imap4.IAccount)
 class IMAPUserAccount(object):
-    implements(imap4.IAccount)
 
     def __init__(self, userDir):
         self.dir = userDir
@@ -19,7 +20,7 @@ class IMAPUserAccount(object):
     def _getMailbox(self, path):
         fullPath = os.path.join(self.dir, path)
         if not os.path.exists(fullPath):
-            raise KeyError, "No such mailbox"
+            raise KeyError("No such mailbox")
         return IMAPMailbox(fullPath)
 
     def listMailboxes(self, ref, wildcard):
@@ -29,21 +30,11 @@ class IMAPUserAccount(object):
     def select(self, path, rw=False):
         return self._getMailbox(path)
 
-class ExtendedMaildir(maildir.MaildirMailbox):
-    def __iter__(self):
-        return iter(self.list)
-
-    def __len__(self):
-        return len(self.list)
-
-    def __getitem__(self, i):
-        return self.list[i]
-
+@implementer(imap4.IMailbox)
 class IMAPMailbox(object):
-    implements(imap4.IMailbox)
 
     def __init__(self, path):
-        self.maildir = ExtendedMaildir(path)
+        self.maildir = mailbox.mbox(path)
         self.listeners = []
         self.uniqueValidityIdentifier = random.randint(1000000, 9999999)
 
@@ -80,8 +71,8 @@ class IMAPMailbox(object):
             raise NotImplementedError("This server only supports lookup by sequence number")
 
         messagesToFetch = self._seqMessageSetToSeqDict(messages)
-        for seq, filename in messagesToFetch.items():
-            yield seq, MaildirMessage(file(filename).read())
+        for seq, msg in messagesToFetch.items():
+            yield seq, MaildirMessage(msg)
 
     def addListener(self, listener):
         self.listeners.append(listener)
@@ -89,11 +80,11 @@ class IMAPMailbox(object):
     def removeListener(self, listener):
         self.listeners.remove(listener)
 
+@implementer(imap4.IMessage)
 class MaildirMessage(object):
-    implements(imap4.IMessage)
 
     def __init__(self, messageData):
-        self.message = email.message_from_string(messageData)
+        self.message = messageData
 
     def getHeaders(self, negate, *names):
         if not names:
@@ -111,13 +102,13 @@ class MaildirMessage(object):
         return headers
 
     def getBodyFile(self):
-        return StringIO(self.message.get_payload())
+        return BytesIO(self.message.is_multipart() and self.message.get_payload() or self.message.get_payload().encode("utf-8"))
 
     def isMultipart(self):
         return self.message.is_multipart()
 
+@implementer(portal.IRealm)
 class MailUserRealm(object):
-    implements(portal.IRealm)
 
     def __init__(self, baseDir):
       self.baseDir = baseDir
@@ -127,18 +118,18 @@ class MailUserRealm(object):
             raise NotImplementedError(
                 "This realm only supports the imap4.IAccount interface.")
 
-        userDir = os.path.join(self.baseDir, avatarId)
+        userDir = os.path.join(self.baseDir, avatarId.decode("utf-8"))
         avatar = IMAPUserAccount(userDir)
         return imap4.IAccount, avatar, lambda: None
 
 class IMAPServerProtocol(imap4.IMAP4Server):
   def lineReceived(self, line):
-      print "CLIENT:", line
+      print("CLIENT:", line)
       imap4.IMAP4Server.lineReceived(self, line)
 
   def sendLine(self, line):
       imap4.IMAP4Server.sendLine(self, line)
-      print "SERVER:", line
+      print("SERVER:", line)
 
 class IMAPFactory(protocol.Factory):
     def __init__(self, portal):
@@ -151,7 +142,7 @@ class IMAPFactory(protocol.Factory):
 
 log.startLogging(sys.stdout)
 
-dataDir = sys.argv[1]
+dataDir = len(sys.argv) > 1 and sys.argv[1] or "/tmp/mail"
 
 portal = portal.Portal(MailUserRealm(dataDir))
 checker = checkers.FilePasswordDB(os.path.join(dataDir, 'passwords.txt'))

@@ -46,7 +46,7 @@ class MaildirMessage(object):
         if not os.path.exists(userDir):
             os.makedirs(userDir, exist_ok=True)
         inboxDir = os.path.join(userDir, 'Inbox')
-        self.mailbox = mailbox.Maildir(inboxDir)
+        self.mailbox = mailbox.mbox(inboxDir)
         self.lines = []
 
     def lineReceived(self, lineBytes):
