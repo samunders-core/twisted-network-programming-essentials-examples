@@ -76,5 +76,5 @@ class LocalSMTPFactory(smtp.SMTPFactory):
 
 log.startLogging(sys.stdout)
 
-reactor.listenTCP(2500, LocalSMTPFactory("/tmp/mail"))
+reactor.listenTCP(2500, LocalSMTPFactory(len(sys.argv) > 1 and sys.argv[1] or "/tmp/mail"))
 reactor.run()
