@@ -26,7 +26,7 @@ class UserInbox(object):
         return self.mailbox.get_file(index)._file.name + ":" + index
 
     def getMessage(self, index):
-        return BytesIO(self.mailbox[index].is_multipart() and self.mailbox[index].get_payload() or self.mailbox[index].get_payload().encode("utf-8"))
+        return BytesIO(str(self.mailbox[index]).encode("utf-8"))
 
     def deleteMessage(self, index):
         self.markedForDeletion.add(index)
